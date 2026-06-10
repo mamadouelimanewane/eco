@@ -5,7 +5,7 @@ import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard, Map, FolderKanban, Sprout, Users,
   BarChart3, BookOpen, LogOut, Leaf, Building2,
-  FlaskConical, Target, FileText, Settings, TreePine, Globe,
+  FlaskConical, Target, FileText, Settings, TreePine, Globe, Route,
 } from "lucide-react";
 
 const groups = [
@@ -55,7 +55,8 @@ const groups = [
 ];
 
 const externalLinks = [
-  { label: "Portail Citoyen", href: "/portail", icon: Globe },
+  { label: "Portail Citoyen",   href: "/portail",  icon: Globe },
+  { label: "Feuille de route",  href: "/roadmap",  icon: FileText },
 ];
 
 export default function Sidebar() {
