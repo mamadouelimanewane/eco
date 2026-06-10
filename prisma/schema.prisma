@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── AUTH ───────────────────────────────────────────────
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(COMMUNITY)
+  langue        String    @default("fr")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts   Account[]
+  sessions   Session[]
+  saisies    Saisie[]
+  missions   Mission[]
+  volontaire Volontaire?
+
+  @@map("users")
+}
+
+enum Role {
+  SUPER_ADMIN    // Direction ASERGMV
+  ADMIN          // Responsable projet
+  AGENT_TERRAIN  // Agent de collecte terrain
+  BAILLEUR       // UE, PNUD, Canada...
+  VOLONTAIRE     // Bénévoles
+  COMMUNITY      // Grand public / communautés
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ─── GÉOGRAPHIE ─────────────────────────────────────────
+model Region {
+  id       String    @id @default(cuid())
+  nom      String    @unique
+  code     String    @unique
+  communes Commune[]
+
+  @@map("regions")
+}
+
+model Commune {
+  id        String     @id @default(cuid())
+  nom       String
+  code      String     @unique
+  latitude  Float
+  longitude Float
+  regionId  String
+  statut    StatutZone @default(EN_COURS)
+  region    Region     @relation(fields: [regionId], references: [id])
+  parcelles Parcelle[]
+  saisies   Saisie[]
+
+  @@map("communes")
+}
+
+enum StatutZone {
+  PLANIFIE
+  EN_COURS
+  TERMINE
+  ABANDONNE
+}
+
+// ─── PROJETS ────────────────────────────────────────────
+model Projet {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  nom         String
+  description String?
+  bailleur    String
+  budget      Float
+  devise      String       @default("EUR")
+  dateDebut   DateTime
+  dateFin     DateTime
+  statut      StatutProjet @default(EN_COURS)
+  createdAt   DateTime     @default(now())
+
+  parcelles Parcelle[]
+  saisies   Saisie[]
+  kpis      KPI[]
+  missions  Mission[]
+
+  @@map("projets")
+}
+
+enum StatutProjet {
+  PLANIFIE
+  EN_COURS
+  SUSPENDU
+  TERMINE
+}
+
+// ─── PARCELLES ──────────────────────────────────────────
+model Parcelle {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  latitude      Float
+  longitude     Float
+  superficie    Float       // en hectares
+  espece        String
+  nombrePlants  Int         @default(0)
+  tauxSurvie    Float?      // 0.0 à 1.0
+  datePlantation DateTime?
+  statut        StatutZone  @default(EN_COURS)
+  communeId     String
+  projetId      String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  commune  Commune  @relation(fields: [communeId], references: [id])
+  projet   Projet   @relation(fields: [projetId], references: [id])
+  saisies  Saisie[]
+  photos   Photo[]
+
+  @@map("parcelles")
+}
+
+// ─── COLLECTE TERRAIN ───────────────────────────────────
+model Saisie {
+  id           String      @id @default(cuid())
+  type         TypeSaisie
+  latitude     Float?
+  longitude    Float?
+  nombrePlants Int?
+  tauxSurvie   Float?
+  notes        String?
+  synced       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+
+  userId     String
+  communeId  String?
+  parcelleId String?
+  projetId   String?
+
+  user      User      @relation(fields: [userId], references: [id])
+  commune   Commune?  @relation(fields: [communeId], references: [id])
+  parcelle  Parcelle? @relation(fields: [parcelleId], references: [id])
+  projet    Projet?   @relation(fields: [projetId], references: [id])
+  photos    Photo[]
+
+  @@map("saisies")
+}
+
+enum TypeSaisie {
+  PLANTATION
+  INVENTAIRE_SURVIE
+  SIGNALEMENT
+  PHOTO
+  PEPIN_STOCK
+  EAU_POINT
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  url        String
+  caption    String?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime @default(now())
+
+  saisieId   String?
+  parcelleId String?
+
+  saisie   Saisie?   @relation(fields: [saisieId], references: [id])
+  parcelle Parcelle? @relation(fields: [parcelleId], references: [id])
+
+  @@map("photos")
+}
+
+// ─── KPIs BAILLEURS ─────────────────────────────────────
+model KPI {
+  id        String   @id @default(cuid())
+  projetId  String
+  nom       String
+  valeur    Float
+  unite     String
+  cible     Float?
+  periode   String   // "2026-Q1", "2026", etc.
+  createdAt DateTime @default(now())
+
+  projet Projet @relation(fields: [projetId], references: [id])
+
+  @@map("kpis")
+}
+
+// ─── VOLONTAIRES ────────────────────────────────────────
+model Volontaire {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  competences  String[]
+  disponible   Boolean  @default(true)
+  zone         String?
+  heuresBenev  Float    @default(0)
+  createdAt    DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id])
+  missions Mission[]
+
+  @@map("volontaires")
+}
+
+// ─── MISSIONS ───────────────────────────────────────────
+model Mission {
+  id          String        @id @default(cuid())
+  titre       String
+  description String?
+  competences String[]
+  dateDebut   DateTime
+  dateFin     DateTime?
+  lieu        String?
+  statut      StatutMission @default(OUVERTE)
+  projetId    String?
+  createdAt   DateTime      @default(now())
+
+  projet      Projet?      @relation(fields: [projetId], references: [id])
+  volontaires Volontaire[]
+  responsable User?        @relation(fields: [responsableId], references: [id])
+  responsableId String?
+
+  @@map("missions")
+}
+
+enum StatutMission {
+  OUVERTE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+}
+
+// ─── PÉPINIÈRES ─────────────────────────────────────────
+model Pepiniere {
+  id        String   @id @default(cuid())
+  nom       String
+  latitude  Float
+  longitude Float
+  capacite  Int
+  stocks    Stock[]
+  createdAt DateTime @default(now())
+
+  @@map("pepinieres")
+}
+
+model Stock {
+  id          String    @id @default(cuid())
+  espece      String
+  quantite    Int
+  stade       StadeVie
+  pepiниereId String
+  updatedAt   DateTime  @updatedAt
+
+  pepiniere Pepiniere @relation(fields: [pepiниereId], references: [id])
+
+  @@map("stocks")
+}
+
+enum StadeVie {
+  SEMENCE
+  GERMINATION
+  JEUNE_PLANT
+  PRET_PLANTATION
+}
