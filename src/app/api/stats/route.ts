@@ -4,28 +4,40 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [parcelles, communes, projets] = await Promise.all([
+    const [agg, communesCount, projetsActifs, projets] = await Promise.all([
       prisma.parcelle.aggregate({
         _sum: { nombrePlants: true, superficie: true },
         _avg: { tauxSurvie: true },
       }),
       prisma.commune.count(),
       prisma.projet.count({ where: { statut: "EN_COURS" } }),
+      prisma.projet.findMany({
+        where: { statut: "EN_COURS" },
+        include: { _count: { select: { parcelles: true } } },
+        orderBy: { dateDebut: "desc" },
+        take: 6,
+      }),
     ]);
 
-    const totalArbres = parcelles._sum.nombrePlants ?? 0;
-    const totalHectares = parcelles._sum.superficie ?? 0;
-    const tauxSurvie = parcelles._avg.tauxSurvie ?? 0;
-    // Estimation carbone : 1 arbre adulte séquestre ~22 kg CO2/an
-    const co2Sequestre = Math.round(totalArbres * 22) / 1000; // en tonnes
+    const arbresPlantes = agg._sum.nombrePlants ?? 0;
+    const superficieHa  = Math.round((agg._sum.superficie ?? 0) * 10) / 10;
+    const tauxSurvie    = Math.round((agg._avg.tauxSurvie ?? 0) * 1000) / 10;
+    const co2Tonnes     = Math.round(arbresPlantes * 22) / 1000;
 
     return NextResponse.json({
-      totalArbres,
-      totalCommunes: communes,
-      totalHectares: Math.round(totalHectares * 10) / 10,
-      tauxSurvieGlobal: Math.round(tauxSurvie * 1000) / 10,
-      totalProjets: projets,
-      co2Sequestre: Math.round(co2Sequestre * 10) / 10,
+      arbresPlantes,
+      communesActives: communesCount,
+      superficieHa,
+      tauxSurvie,
+      projetsActifs,
+      co2Tonnes,
+      projets: projets.map((p) => ({
+        id: p.id,
+        nom: p.nom,
+        bailleur: p.bailleur,
+        statut: p.statut,
+        _count: p._count,
+      })),
     });
   } catch {
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

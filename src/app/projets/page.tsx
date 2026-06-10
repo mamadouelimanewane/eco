@@ -1,108 +1,100 @@
-import { prisma } from "@/lib/prisma";
-import { FolderKanban, Calendar, DollarSign, Sprout } from "lucide-react";
+"use client";
+import { useEffect, useState } from "react";
+import { FolderKanban, Search, Calendar, Wallet } from "lucide-react";
 
-const statutStyle: Record<string, { bg: string; text: string; label: string }> = {
-  EN_COURS:  { bg: "bg-green-100",  text: "text-green-700",  label: "En cours" },
-  PLANIFIE:  { bg: "bg-blue-100",   text: "text-blue-700",   label: "Planifié" },
-  SUSPENDU:  { bg: "bg-orange-100", text: "text-orange-700", label: "Suspendu" },
-  TERMINE:   { bg: "bg-gray-100",   text: "text-gray-600",   label: "Terminé" },
-};
-
-async function getProjets() {
-  try {
-    return await prisma.projet.findMany({
-      include: {
-        _count: { select: { parcelles: true, saisies: true } },
-        kpis: { take: 3, orderBy: { createdAt: "desc" } },
-      },
-      orderBy: { dateDebut: "desc" },
-    });
-  } catch {
-    return [];
-  }
+interface Projet {
+  id: string; code: string; nom: string; bailleur: string; budget: number; devise: string;
+  dateDebut: string; dateFin: string; statut: string;
+  _count: { parcelles: number; saisies: number };
 }
 
-export default async function ProjetsPage() {
-  const projets = await getProjets();
+const statutStyle: Record<string, string> = {
+  EN_COURS: "bg-emerald-100 text-emerald-700", TERMINE: "bg-slate-100 text-slate-600",
+  PLANIFIE: "bg-blue-100 text-blue-700", SUSPENDU: "bg-amber-100 text-amber-700",
+};
+const statutLabel: Record<string, string> = {
+  EN_COURS: "En cours", TERMINE: "Terminé", PLANIFIE: "Planifié", SUSPENDU: "Suspendu",
+};
+
+export default function ProjetsPage() {
+  const [projets, setProjets] = useState<Projet[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/projets").then(r => r.json()).then(d => { setProjets(d); setLoading(false); });
+  }, []);
+
+  const filtered = projets.filter(p =>
+    p.nom.toLowerCase().includes(search.toLowerCase()) ||
+    p.bailleur.toLowerCase().includes(search.toLowerCase()) ||
+    p.code.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Projets</h1>
-          <p className="text-gray-500 mt-1">{projets.length} projet(s) enregistré(s)</p>
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Nom, bailleur, code…"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
         </div>
+        <span className="text-xs text-gray-400">{filtered.length} projet(s)</span>
       </div>
 
-      {projets.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center">
-          <FolderKanban size={48} className="mx-auto mb-4 text-gray-200" />
-          <p className="font-semibold text-gray-600">Aucun projet enregistré</p>
-          <p className="text-sm text-gray-400 mt-2">
-            Exécutez le seed pour initialiser les 8 projets ASERGMV.
-          </p>
-          <code className="block mt-4 text-xs bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-600 inline-block">
-            npx prisma db seed
-          </code>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {projets.map((projet) => {
-            const s = statutStyle[projet.statut] ?? statutStyle.PLANIFIE;
-            const budget = projet.budget.toLocaleString("fr-FR");
-            return (
-              <div key={projet.id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-bold text-[#2E8B57] bg-[#2E8B57]/10 px-2 py-0.5 rounded">
-                      {projet.code}
-                    </span>
-                    <h3 className="font-bold text-gray-900 mt-2 text-base leading-snug">{projet.nom}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">{projet.bailleur}</p>
-                  </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ml-3 flex-shrink-0 ${s.bg} ${s.text}`}>
-                    {s.label}
-                  </span>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {loading ? Array.from({length: 4}).map((_, i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 h-48 animate-pulse">
+            <div className="h-4 bg-gray-100 rounded w-3/4 mb-3" />
+            <div className="h-3 bg-gray-100 rounded w-1/2" />
+          </div>
+        )) : filtered.map(p => (
+          <div key={p.id} className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-violet-50 rounded-lg flex items-center justify-center shrink-0">
+                  <FolderKanban size={18} className="text-violet-600" />
                 </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center p-2.5 bg-gray-50 rounded-lg">
-                    <Sprout size={16} className="mx-auto text-[#2E8B57] mb-1" />
-                    <p className="text-lg font-bold text-gray-900">{projet._count.parcelles}</p>
-                    <p className="text-xs text-gray-500">Parcelles</p>
-                  </div>
-                  <div className="text-center p-2.5 bg-gray-50 rounded-lg">
-                    <Calendar size={16} className="mx-auto text-blue-500 mb-1" />
-                    <p className="text-lg font-bold text-gray-900">
-                      {new Date(projet.dateDebut).getFullYear()}
-                    </p>
-                    <p className="text-xs text-gray-500">Début</p>
-                  </div>
-                  <div className="text-center p-2.5 bg-gray-50 rounded-lg">
-                    <DollarSign size={16} className="mx-auto text-orange-500 mb-1" />
-                    <p className="text-base font-bold text-gray-900">{budget}</p>
-                    <p className="text-xs text-gray-500">{projet.devise}</p>
-                  </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm leading-tight">{p.nom}</p>
+                  <p className="text-xs text-gray-400">{p.code} · {p.bailleur}</p>
                 </div>
-
-                {projet.kpis.length > 0 && (
-                  <div className="border-t border-gray-100 pt-3 space-y-1.5">
-                    {projet.kpis.map((k) => (
-                      <div key={k.id} className="flex justify-between text-xs">
-                        <span className="text-gray-500">{k.nom}</span>
-                        <span className="font-semibold text-gray-800">
-                          {k.valeur.toLocaleString("fr-FR")} {k.unite}
-                          {k.cible && (
-                            <span className="text-gray-400 font-normal"> / {k.cible.toLocaleString("fr-FR")}</span>
-                          )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
-            );
-          })}
+              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${statutStyle[p.statut] ?? "bg-gray-100 text-gray-600"}`}>
+                {statutLabel[p.statut] ?? p.statut}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-50">
+              <div>
+                <p className="text-[11px] text-gray-400 flex items-center gap-1"><Wallet size={10} /> Budget</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {(p.budget / 1_000_000).toFixed(1)}M {p.devise}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-400">Parcelles</p>
+                <p className="text-sm font-semibold text-gray-800">{p._count.parcelles}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-400">Saisies</p>
+                <p className="text-sm font-semibold text-gray-800">{p._count.saisies}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
+              <Calendar size={11} />
+              {new Date(p.dateDebut).toLocaleDateString("fr-FR")} → {new Date(p.dateFin).toLocaleDateString("fr-FR")}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!loading && filtered.length === 0 && (
+        <div className="text-center py-16 text-gray-400">
+          <FolderKanban size={32} className="mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Aucun projet trouvé</p>
         </div>
       )}
     </div>
