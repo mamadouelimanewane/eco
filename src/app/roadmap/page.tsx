@@ -170,7 +170,7 @@ export default function RoadmapPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* ── PAGE DE GARDE ─────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-slate-950 text-white min-h-screen flex flex-col">
+      <div className="relative overflow-hidden bg-slate-950 text-white flex flex-col">
         {/* Blur décors */}
         <div className="absolute top-0 left-1/4 w-[700px] h-[700px] bg-emerald-500/10 blur-[140px] rounded-full -translate-y-1/2 pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-teal-400/8 blur-[120px] rounded-full translate-y-1/3 pointer-events-none" />
@@ -194,7 +194,7 @@ export default function RoadmapPage() {
         </nav>
 
         {/* Hero */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 py-24 text-center">
+        <div className="relative z-10 flex flex-col items-center justify-center px-8 py-16 text-center">
           <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest mb-10">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
             Document stratégique · {totalApps} applications
