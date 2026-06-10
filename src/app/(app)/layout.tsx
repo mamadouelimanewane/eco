@@ -3,7 +3,7 @@ import Header from "@/components/layout/Header";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[#f1f5f9]">
       <Sidebar />
       <div className="flex flex-col flex-1 ml-64 min-h-screen overflow-hidden">
         <Header />
