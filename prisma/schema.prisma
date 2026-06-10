@@ -3,7 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 // ─── AUTH ───────────────────────────────────────────────
@@ -282,10 +283,10 @@ model Stock {
   espece      String
   quantite    Int
   stade       StadeVie
-  pepiниereId String
+  pepiniereId String    @map("pepiniere_id")
   updatedAt   DateTime  @updatedAt
 
-  pepiniere Pepiniere @relation(fields: [pepiниereId], references: [id])
+  pepiniere Pepiniere @relation(fields: [pepiniereId], references: [id])
 
   @@map("stocks")
 }
@@ -296,3 +297,4 @@ enum StadeVie {
   JEUNE_PLANT
   PRET_PLANTATION
 }
+
