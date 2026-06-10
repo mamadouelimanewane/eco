@@ -1,316 +1,293 @@
 "use client";
-import { useEffect, useState } from "react";
-import { TreePine, MapPin, Leaf, Wind, Users, AlertTriangle, CheckCircle2, X, ChevronRight, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import {
+  Leaf, TreePine, Map, Users, BarChart3, Globe, Mail, Phone,
+  ArrowRight, CheckCircle2, Sprout, Wind, Droplets, Shield,
+  X, Send, Star, TrendingUp, Zap,
+} from "lucide-react";
 
-interface Stats { arbresPlantes: number; communesActives: number; superficieHa: number; tauxSurvie: number; projetsActifs: number; co2Tonnes: number; }
+const stats = [
+  { val: "850 km", label: "Bande reboisee" },
+  { val: "131",    label: "Communes ciblees" },
+  { val: "10M+",   label: "Arbres plantes" },
+  { val: "8",      label: "Bailleurs actifs" },
+];
 
-const typeSignalement = ["Feu de brousse", "Coupe illicite", "Zone dégradée", "Point d'eau tari", "Espèces envahissantes", "Autre"];
-const competencesList = ["Plantation", "Pépinière", "Suivi terrain", "Sensibilisation", "Cartographie", "Agriculture", "Élevage", "Formation"];
-const communes = ["Linguère", "Ranérou", "Matam", "Kanel", "Bakel", "Goudiry", "Koumpentoum", "Tambacounda", "Vélingara", "Kolda", "Sédhiou", "Ziguinchor"];
+const features = [
+  { icon: Map,       title: "Carte Interactive",   desc: "Visualisez en temps reel l'avancement des reboisements sur les 850 km de la Grande Muraille Verte.", bg: "bg-emerald-50", color: "text-emerald-600", ring: "ring-emerald-100" },
+  { icon: BarChart3, title: "Tableaux de bord",    desc: "Suivez les KPIs cles : arbres plantes, taux de survie, superficie reboisee, CO2 sequestre.",         bg: "bg-blue-50",    color: "text-blue-600",    ring: "ring-blue-100"    },
+  { icon: Users,     title: "Volontariat citoyen", desc: "Rejoignez le reseau de volontaires et participez directement aux missions de reforestation.",           bg: "bg-violet-50",  color: "text-violet-600",  ring: "ring-violet-100"  },
+  { icon: TreePine,  title: "Pepinieres locales",  desc: "Accedez aux donnees des pepinieres, disponibilites en plants et calendriers de reboisement.",           bg: "bg-teal-50",    color: "text-teal-600",    ring: "ring-teal-100"    },
+  { icon: Shield,    title: "Signalement terrain", desc: "Signalez des problemes environnementaux — deforestation illegale, incendies, especes invasives.",        bg: "bg-rose-50",    color: "text-rose-600",    ring: "ring-rose-100"    },
+  { icon: Droplets,  title: "Ressources en eau",   desc: "Suivi des nappes phreatiques et des systemes d'irrigation pour optimiser la survie des plants.",         bg: "bg-cyan-50",    color: "text-cyan-600",    ring: "ring-cyan-100"    },
+];
 
-type Modal = null | "signalement" | "volontaire";
+const steps = [
+  { n: "01", title: "Creez votre profil",      desc: "Inscrivez-vous en 2 min avec vos informations de base." },
+  { n: "02", title: "Choisissez vos missions", desc: "Parcourez les missions disponibles dans votre commune." },
+  { n: "03", title: "Participez activement",   desc: "Reboisez, signalez et rapportez via l'application mobile." },
+];
 
-export default function PortailCitoyen() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [modal, setModal] = useState<Modal>(null);
-  const [step, setStep] = useState(0);
-  const [success, setSuccess] = useState<Modal>(null);
-  const [loading, setLoading] = useState(false);
+const testimonials = [
+  { name: "Aminata Diallo", role: "Volontaire, Louga",       quote: "Grace a ASERGMV j'ai plante plus de 400 arbres dans ma commune.", stars: 5 },
+  { name: "Ibrahima Sow",   role: "Chef de projet, Matam",   quote: "La plateforme facilite enormement le suivi des parcelles et des equipes.", stars: 5 },
+  { name: "Fatou Ndoye",    role: "Agent terrain, Linguere", quote: "Les outils de saisie terrain sont rapides et bien penses pour le terrain.", stars: 5 },
+];
 
-  const [sig, setSig] = useState({ type: "", commune: "", description: "" });
-  const [vol, setVol] = useState({ nom: "", email: "", telephone: "", zone: "", competences: [] as string[], motivation: "" });
+export default function PortailPage() {
+  const [showSignal, setShowSignal]         = useState(false);
+  const [showVolontaire, setShowVolontaire] = useState(false);
+  const [vstep, setVstep]                   = useState(1);
+  const [form, setForm]                     = useState({ nom: "", email: "", commune: "", message: "" });
+  const [sf, setSf]                         = useState({ type: "", description: "", localisation: "" });
+  const [sent, setSent]                     = useState(false);
+  const [sigSent, setSigSent]               = useState(false);
 
-  useEffect(() => {
-    fetch("/api/stats").then(r => r.json()).then(setStats);
-  }, []);
-
-  const openModal = (m: Modal) => { setModal(m); setStep(0); setSuccess(null); };
-  const closeModal = () => { setModal(null); setStep(0); };
-
-  const submitSignalement = async () => {
-    setLoading(true);
-    await fetch("/api/signalement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sig) });
-    setLoading(false);
-    setSuccess("signalement");
-  };
-
-  const submitVolontaire = async () => {
-    setLoading(true);
-    const r = await fetch("/api/inscription-volontaire", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(vol) });
-    setLoading(false);
-    if (r.ok) setSuccess("volontaire");
-    else { const d = await r.json(); alert(d.error); }
-  };
-
-  const toggleComp = (c: string) =>
-    setVol(v => ({ ...v, competences: v.competences.includes(c) ? v.competences.filter(x => x !== c) : [...v.competences, c] }));
+  async function submitVol() {
+    if (!form.nom || !form.email) return;
+    await fetch("/api/inscription-volontaire", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: form.nom, email: form.email, commune: form.commune }) });
+    setSent(true);
+  }
+  async function submitSig() {
+    if (!sf.type || !sf.description) return;
+    await fetch("/api/signalement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sf) });
+    setSigSent(true);
+  }
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 bg-black border-b border-slate-800">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      {/* NAV */}
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <Leaf size={16} className="text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-white text-sm leading-tight">ASERGMV</p>
-              <p className="text-[10px] text-slate-400 leading-tight">Portail Citoyen</p>
-            </div>
+            <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center"><Leaf size={18} className="text-white" /></div>
+            <div><p className="font-black text-slate-900 text-sm leading-none">ASERGMV</p><p className="text-[10px] text-slate-400 leading-none">Grande Muraille Verte</p></div>
+          </div>
+          <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
+            <a href="#programme" className="hover:text-emerald-600 transition-colors">Programme</a>
+            <a href="#features" className="hover:text-emerald-600 transition-colors">Fonctionnalites</a>
+            <a href="#rejoindre" className="hover:text-emerald-600 transition-colors">Rejoindre</a>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => openModal("signalement")} className="text-sm text-slate-300 hover:text-white transition-colors">Signaler</button>
-            <button onClick={() => openModal("volontaire")} className="px-4 py-1.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-500 transition-colors font-medium">Devenir volontaire</button>
-            <a href="/login" className="px-3 py-1.5 border border-slate-700 text-slate-300 text-sm rounded-lg hover:border-slate-500 hover:text-white transition-colors">Connexion agent</a>
+            <button onClick={() => setShowSignal(true)} className="hidden sm:block text-sm font-semibold text-slate-600 hover:text-slate-900 px-4 py-2 rounded-xl hover:bg-slate-100 transition-all">Signaler</button>
+            <button onClick={() => setShowVolontaire(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all">Devenir Volontaire <ArrowRight size={15} /></button>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <div className="bg-black text-white py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="max-w-2xl">
-            <span className="inline-block text-xs font-semibold text-emerald-400 tracking-widest uppercase mb-4">Grande Muraille Verte · Sénégal</span>
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
-              Ensemble, nous reboisonsle Sahel
-            </h1>
-            <p className="text-slate-400 text-lg leading-relaxed mb-8">
-              850 km de forêt vivante le long de la frontière nord du Sénégal. Rejoignez des milliers de citoyens qui protègent la Grande Muraille Verte.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <button onClick={() => openModal("volontaire")} className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-colors">
-                <Users size={18} /> Devenir volontaire <ArrowRight size={16} />
-              </button>
-              <button onClick={() => openModal("signalement")} className="flex items-center gap-2 px-6 py-3 border border-slate-700 hover:border-slate-500 text-white font-medium rounded-xl transition-colors">
-                <AlertTriangle size={18} /> Faire un signalement
-              </button>
+      {/* HERO */}
+      <section className="relative overflow-hidden bg-slate-950">
+        <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-emerald-500/15 blur-[120px] rounded-full -translate-y-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-teal-400/10 blur-[100px] rounded-full translate-y-1/3 pointer-events-none" />
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-28 md:py-36 text-center">
+          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest mb-8">
+            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />Plateforme digitale officielle ASERGMV
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none mb-6">
+            GRANDE<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-400">MURAILLE VERTE</span>
+          </h1>
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            La plateforme numerique de reference pour piloter, monitorer et democratiser la reforestation du Senegal.
+            {" "}<span className="text-emerald-400 font-semibold">850 km · 131 communes.</span>
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
+            <button onClick={() => setShowVolontaire(true)} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-black px-8 py-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 text-base">Rejoindre le reseau <ArrowRight size={18} /></button>
+            <button onClick={() => setShowSignal(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold px-8 py-4 rounded-2xl border border-white/10 transition-all text-base">Faire un signalement</button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+            {stats.map(({ val, label }) => (
+              <div key={label} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 text-center">
+                <p className="text-3xl font-black text-white">{val}</p>
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PROGRAMME */}
+      <section id="programme" className="py-24 bg-gradient-to-b from-slate-950 to-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+              <p className="text-emerald-600 text-xs font-black uppercase tracking-widest mb-3">Le Programme</p>
+              <h2 className="text-4xl font-black text-white tracking-tight mb-6 leading-tight">Une initiative nationale<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-400">pour reverdir le Sahel</span></h2>
+              <p className="text-slate-400 text-lg leading-relaxed mb-6">La Grande Muraille Verte est un projet panafricain. Au Senegal, l'ASERGMV coordonne le reboisement de 850 km a travers 131 communes.</p>
+              {["Lutte contre la desertification","Sequestration de CO2 et attenuation climatique","Creation d'emplois verts","Preservation de la biodiversite au Sahel"].map(t => (
+                <div key={t} className="flex items-start gap-3 mb-3"><CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" /><span className="text-slate-300 text-sm">{t}</span></div>
+              ))}
+            </div>
+            <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {[{Icon:TrendingUp,label:"Croissance",v:"+12%",c:"text-emerald-400"},{Icon:Wind,label:"CO2 sequestre",v:"2 400 t",c:"text-blue-400"},{Icon:Droplets,label:"Taux survie",v:"78%",c:"text-teal-400"},{Icon:Zap,label:"Projets actifs",v:"8",c:"text-amber-400"}].map(({Icon,label,v,c}) => (
+                  <div key={label} className="bg-white/5 rounded-2xl p-4"><Icon size={16} className={c+" mb-2"} /><p className="text-xl font-black text-white">{v}</p><p className="text-[11px] text-slate-500 font-semibold mt-0.5">{label}</p></div>
+                ))}
+              </div>
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-3"><Leaf size={20} className="text-emerald-400 shrink-0" /><p className="text-sm text-emerald-300 font-semibold">Objectif 2030 : 100 millions d'hectares en Afrique</p></div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Stats */}
-      <div className="bg-emerald-700 py-10 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-white text-center">
-          {[
-            { label: "Arbres plantés", value: stats?.arbresPlantes?.toLocaleString("fr-FR") ?? "…", icon: "🌳" },
-            { label: "Communes actives", value: `${stats?.communesActives ?? "…"}/131`, icon: "🏘️" },
-            { label: "Superficie (ha)", value: stats?.superficieHa?.toFixed(0) ?? "…", icon: "🌿" },
-            { label: "Taux de survie", value: stats ? `${stats.tauxSurvie}%` : "…", icon: "💧" },
-            { label: "Projets actifs", value: stats?.projetsActifs ?? "…", icon: "📋" },
-            { label: "CO₂ séquestré (t/an)", value: stats?.co2Tonnes?.toLocaleString("fr-FR") ?? "…", icon: "🌬️" },
-          ].map(({ label, value, icon }) => (
-            <div key={label}>
-              <div className="text-2xl mb-1">{icon}</div>
-              <div className="text-2xl font-bold">{value}</div>
-              <div className="text-xs text-emerald-200 mt-0.5">{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Cards CTA */}
-      <div className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          {
-            titre: "Faire un signalement", icon: AlertTriangle, color: "bg-amber-50 text-amber-600 border-amber-100",
-            desc: "Signalez un feu de brousse, une coupe illégale ou une zone dégradée. Votre alerte est transmise directement aux agents ASERGMV.",
-            btn: "Signaler maintenant", action: () => openModal("signalement"), btnClass: "bg-amber-600 hover:bg-amber-500",
-          },
-          {
-            titre: "Devenir volontaire", icon: Users, color: "bg-emerald-50 text-emerald-600 border-emerald-100",
-            desc: "Participez aux campagnes de plantation, au suivi des parcelles ou à la sensibilisation des communautés locales.",
-            btn: "S'inscrire gratuitement", action: () => openModal("volontaire"), btnClass: "bg-emerald-700 hover:bg-emerald-600",
-          },
-          {
-            titre: "Suivre les projets", icon: TreePine, color: "bg-blue-50 text-blue-600 border-blue-100",
-            desc: "Consultez l'avancement des 8 projets ASERGMV en cours, les parcelles reboisées et les indicateurs de performance.",
-            btn: "Voir la carte GMV", action: () => window.location.href = "/dashboard", btnClass: "bg-blue-700 hover:bg-blue-600",
-          },
-        ].map(({ titre, icon: Icon, color, desc, btn, action, btnClass }) => (
-          <div key={titre} className={`rounded-2xl border p-6 ${color.split(" ").slice(2).join(" ")}`}>
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${color.split(" ").slice(0, 2).join(" ")}`}>
-              <Icon size={24} />
-            </div>
-            <h3 className="font-bold text-gray-900 text-lg mb-2">{titre}</h3>
-            <p className="text-gray-500 text-sm leading-relaxed mb-5">{desc}</p>
-            <button onClick={action} className={`w-full py-2.5 rounded-xl text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${btnClass}`}>
-              {btn} <ChevronRight size={16} />
-            </button>
+      {/* FEATURES */}
+      <section id="features" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <p className="text-emerald-600 text-xs font-black uppercase tracking-widest mb-3">Fonctionnalites</p>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-4">Une plateforme complete</h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">Tous les outils pour piloter la Grande Muraille Verte.</p>
           </div>
-        ))}
-      </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            {features.map(({icon:Icon,title,desc,bg,color,ring}) => (
+              <div key={title} className={"group bg-white border border-slate-100 rounded-3xl p-7 shadow-sm hover:shadow-xl ring-1 "+ring+" hover:ring-2 transition-all duration-300 hover:-translate-y-1"}>
+                <div className={"w-12 h-12 "+bg+" rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-200"}><Icon size={22} className={color} /></div>
+                <h3 className="text-base font-black text-slate-900 mb-2">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* Footer */}
-      <footer className="bg-black text-slate-500 text-center py-8 text-sm">
-        <p>© 2026 ASERGMV · Agence Sénégalaise de la Grande Muraille Verte</p>
-        <p className="mt-1 text-xs">
-          <a href="/login" className="text-slate-400 hover:text-white transition-colors">Espace agents</a>
-          {" · "}
-          <a href="/dashboard" className="text-slate-400 hover:text-white transition-colors">Tableau de bord</a>
-        </p>
+      {/* STEPS */}
+      <section id="rejoindre" className="py-24 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+          <p className="text-emerald-600 text-xs font-black uppercase tracking-widest mb-3">Rejoindre</p>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-4">Devenez acteur du reboisement</h2>
+          <p className="text-slate-500 text-lg mb-14">Participez en 3 etapes simples.</p>
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {steps.map(({n,title,desc}) => (
+              <div key={n} className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm hover:shadow-md transition-all">
+                <div className="text-5xl font-black text-slate-100 mb-4">{n}</div>
+                <h3 className="text-base font-black text-slate-900 mb-2">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setShowVolontaire(true)} className="inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg px-10 py-4 rounded-2xl shadow-lg shadow-emerald-200 transition-all hover:scale-105"><Sprout size={20} /> Je veux participer</button>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <p className="text-emerald-600 text-xs font-black uppercase tracking-widest mb-3">Temoignages</p>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tight">Ils parlent de nous</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            {testimonials.map(({name,role,quote,stars}) => (
+              <div key={name} className="bg-slate-50 border border-slate-100 rounded-3xl p-7 shadow-sm hover:shadow-md transition-all">
+                <div className="flex gap-0.5 mb-4">{Array.from({length:stars}).map((_,i) => <Star key={i} size={14} className="fill-amber-400 text-amber-400" />)}</div>
+                <p className="text-slate-600 text-sm leading-relaxed mb-5 italic">"{quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-xs font-black text-emerald-600">{name.split(" ").map((n:string) => n[0]).join("")}</div>
+                  <div><p className="text-sm font-bold text-slate-900">{name}</p><p className="text-xs text-slate-400">{role}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-slate-950 text-slate-400 py-16">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-10">
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-3 mb-4"><div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center"><Leaf size={18} className="text-white" /></div><div><p className="font-black text-white text-sm">ASERGMV</p><p className="text-[10px] text-slate-500">Agence Senegalaise pour la GMV</p></div></div>
+            <p className="text-sm text-slate-500 leading-relaxed max-w-sm">Plateforme digitale officielle de l'ASERGMV. Monitoring, pilotage et citoyennete active.</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-300 uppercase tracking-widest mb-4">Navigation</p>
+            {["Programme","Fonctionnalites","Rejoindre","Connexion"].map(l => <p key={l}><a href="#" className="text-sm text-slate-500 hover:text-emerald-400 transition-colors block mb-2">{l}</a></p>)}
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-300 uppercase tracking-widest mb-4">Contact</p>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2"><Mail size={14} className="text-emerald-500" />contact@asergmv.sn</div>
+              <div className="flex items-center gap-2"><Phone size={14} className="text-emerald-500" />+221 33 820 00 00</div>
+              <div className="flex items-center gap-2"><Globe size={14} className="text-emerald-500" />www.grandmurailleverte.org</div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-6 pt-8 mt-8 border-t border-slate-800 flex items-center justify-between text-xs text-slate-600">
+          <span>2026 ASERGMV</span><a href="/dashboard" className="text-emerald-500 hover:underline font-semibold">Acces plateforme</a>
+        </div>
       </footer>
 
-      {/* Modal Signalement */}
-      {modal === "signalement" && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && closeModal()}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div>
-                <h2 className="font-bold text-gray-900">Faire un signalement</h2>
-                <p className="text-xs text-gray-400">Votre signalement sera traité par nos agents</p>
+      {/* MODAL SIGNALEMENT */}
+      {showSignal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowSignal(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8" onClick={e => e.stopPropagation()}>
+            {!sigSent ? (<>
+              <div className="flex items-center justify-between mb-6">
+                <div><h2 className="text-xl font-black text-slate-900">Signalement</h2><p className="text-sm text-slate-400 mt-0.5">Signalez un incident environnemental</p></div>
+                <button onClick={() => setShowSignal(false)} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center"><X size={16} className="text-slate-500" /></button>
               </div>
-              <button onClick={closeModal} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={16} /></button>
-            </div>
-
-            {success === "signalement" ? (
-              <div className="px-6 py-12 text-center">
-                <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 size={32} className="text-emerald-500" />
-                </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">Signalement envoyé !</h3>
-                <p className="text-gray-500 text-sm mb-6">Merci. Nos agents terrain vont traiter votre signalement dans les plus brefs délais.</p>
-                <button onClick={closeModal} className="px-6 py-2.5 bg-black text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors">Fermer</button>
+              <div className="space-y-4">
+                <select value={sf.type} onChange={e => setSf(f => ({...f,type:e.target.value}))} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                  <option value="">Type d'incident *</option>
+                  <option value="DEFORESTATION">Deforestation illegale</option>
+                  <option value="INCENDIE">Incendie</option>
+                  <option value="ESPECE_INVASIVE">Espece invasive</option>
+                  <option value="EROSION">Erosion</option>
+                  <option value="AUTRE">Autre</option>
+                </select>
+                <input placeholder="Localisation" value={sf.localisation} onChange={e => setSf(f => ({...f,localisation:e.target.value}))} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                <textarea rows={4} placeholder="Description *" value={sf.description} onChange={e => setSf(f => ({...f,description:e.target.value}))} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
+                <button onClick={submitSig} className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl"><Send size={16} /> Envoyer</button>
               </div>
-            ) : (
-              <div className="px-6 py-5 space-y-4">
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">Type de signalement *</label>
-                  <select value={sig.type} onChange={e => setSig(s => ({ ...s, type: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                    <option value="">Sélectionner…</option>
-                    {typeSignalement.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">Commune concernée</label>
-                  <select value={sig.commune} onChange={e => setSig(s => ({ ...s, commune: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                    <option value="">Sélectionner…</option>
-                    {communes.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">Description *</label>
-                  <textarea value={sig.description} onChange={e => setSig(s => ({ ...s, description: e.target.value }))}
-                    rows={4} placeholder="Décrivez ce que vous avez observé…"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-                </div>
-                <button onClick={submitSignalement} disabled={!sig.type || !sig.description || loading}
-                  className="w-full py-3 bg-amber-600 hover:bg-amber-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                  {loading ? "Envoi en cours…" : <><AlertTriangle size={16} /> Envoyer le signalement</>}
-                </button>
+            </>) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle2 size={32} className="text-emerald-600" /></div>
+                <h3 className="text-xl font-black text-slate-900 mb-2">Envoye !</h3>
+                <p className="text-slate-500 text-sm mb-6">Notre equipe traitera votre signalement rapidement.</p>
+                <button onClick={() => {setShowSignal(false);setSigSent(false);setSf({type:"",description:"",localisation:""});}} className="bg-emerald-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-emerald-700">Fermer</button>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Modal Volontaire */}
-      {modal === "volontaire" && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && closeModal()}>
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white">
-              <div>
-                <h2 className="font-bold text-gray-900">Inscription volontaire GMV</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  {[0, 1, 2].map(i => (
-                    <div key={i} className={`h-1 rounded-full transition-all ${i <= step ? "w-8 bg-emerald-500" : "w-4 bg-gray-200"}`} />
-                  ))}
-                  <span className="text-xs text-gray-400">Étape {step + 1}/3</span>
+      {/* MODAL VOLONTAIRE */}
+      {showVolontaire && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowVolontaire(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            {!sent ? (<>
+              <div className="bg-slate-950 rounded-t-3xl p-7 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
+                <div className="flex items-center justify-between">
+                  <div><p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Etape {vstep}/3</p><h2 className="text-xl font-black text-white">{vstep===1?"Votre identite":vstep===2?"Votre commune":"Votre motivation"}</h2></div>
+                  <button onClick={() => setShowVolontaire(false)} className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center"><X size={16} className="text-white" /></button>
                 </div>
+                <div className="flex gap-2 mt-4">{[1,2,3].map(i => <div key={i} className={"h-1.5 rounded-full flex-1 transition-all "+(i<=vstep?"bg-emerald-400":"bg-white/10")} />)}</div>
               </div>
-              <button onClick={closeModal} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"><X size={16} /></button>
-            </div>
-
-            {success === "volontaire" ? (
-              <div className="px-6 py-12 text-center">
-                <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 size={32} className="text-emerald-500" />
-                </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">Bienvenue dans l'équipe !</h3>
-                <p className="text-gray-500 text-sm mb-2">Votre inscription est confirmée. Vous pouvez vous connecter avec :</p>
-                <div className="bg-gray-50 rounded-xl p-4 text-sm font-mono text-gray-700 mb-6">
-                  <p>Email : {vol.email}</p>
-                  <p>Mot de passe : <span className="text-emerald-600">volontaire2026</span></p>
-                </div>
-                <a href="/login" className="inline-block px-6 py-2.5 bg-emerald-700 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors">
-                  Se connecter maintenant
-                </a>
-              </div>
-            ) : step === 0 ? (
-              <div className="px-6 py-5 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700">Vos informations personnelles</h3>
-                <div className="grid grid-cols-1 gap-3">
-                  {[
-                    { label: "Nom complet *", key: "nom", placeholder: "Prénom Nom" },
-                    { label: "Email *", key: "email", placeholder: "vous@exemple.com" },
-                    { label: "Téléphone", key: "telephone", placeholder: "+221 7X XXX XX XX" },
-                  ].map(({ label, key, placeholder }) => (
-                    <div key={key}>
-                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">{label}</label>
-                      <input value={(vol as any)[key]} onChange={e => setVol(v => ({ ...v, [key]: e.target.value }))}
-                        placeholder={placeholder} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                    </div>
-                  ))}
-                </div>
-                <button onClick={() => setStep(1)} disabled={!vol.nom || !vol.email}
-                  className="w-full py-3 bg-black hover:bg-slate-800 disabled:bg-gray-100 disabled:text-gray-400 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                  Continuer <ArrowRight size={16} />
-                </button>
-              </div>
-            ) : step === 1 ? (
-              <div className="px-6 py-5 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700">Vos compétences & zone d'intervention</h3>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-2">Zone géographique</label>
-                  <select value={vol.zone} onChange={e => setVol(v => ({ ...v, zone: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-                    <option value="">Sélectionner…</option>
-                    {communes.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-2">Compétences (plusieurs possibles)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {competencesList.map(c => (
-                      <button key={c} onClick={() => toggleComp(c)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${vol.competences.includes(c) ? "bg-emerald-600 border-emerald-600 text-white" : "border-gray-200 text-gray-600 hover:border-emerald-300"}`}>
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => setStep(0)} className="flex-1 py-3 border border-gray-200 text-gray-600 font-medium rounded-xl text-sm hover:bg-gray-50 transition-colors">Retour</button>
-                  <button onClick={() => setStep(2)} className="flex-1 py-3 bg-black hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                    Continuer <ArrowRight size={16} />
+              <div className="p-7 space-y-4">
+                {vstep===1 && <>
+                  <input placeholder="Nom complet *" value={form.nom} onChange={e => setForm(f => ({...f,nom:e.target.value}))} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  <input placeholder="Email *" type="email" value={form.email} onChange={e => setForm(f => ({...f,email:e.target.value}))} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                </>}
+                {vstep===2 && <>
+                  <input placeholder="Votre commune" value={form.commune} onChange={e => setForm(f => ({...f,commune:e.target.value}))} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  <p className="text-xs text-slate-400">Indiquez la commune ou vous souhaitez participer.</p>
+                </>}
+                {vstep===3 && <>
+                  <textarea rows={4} placeholder="Votre motivation (optionnel)" value={form.message} onChange={e => setForm(f => ({...f,message:e.target.value}))} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
+                  <div className="bg-emerald-50 rounded-xl p-4 flex items-start gap-3"><CheckCircle2 size={16} className="text-emerald-600 mt-0.5 shrink-0" /><p className="text-xs text-emerald-700">En vous inscrivant, vous rejoignez un reseau de citoyens engages pour la reforestation.</p></div>
+                </>}
+                <div className="flex gap-3 pt-2">
+                  {vstep>1 && <button onClick={() => setVstep(s => s-1)} className="flex-1 py-3 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 text-sm">Retour</button>}
+                  <button onClick={() => vstep<3?setVstep(s => s+1):submitVol()} disabled={vstep===1&&(!form.nom||!form.email)} className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold py-3 rounded-xl text-sm">
+                    {vstep===3?<><Send size={15} /> Soumettre</>:<>Suivant <ArrowRight size={15} /></>}
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="px-6 py-5 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700">Votre motivation</h3>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1.5">Pourquoi souhaitez-vous rejoindre la GMV ?</label>
-                  <textarea value={vol.motivation} onChange={e => setVol(v => ({ ...v, motivation: e.target.value }))}
-                    rows={5} placeholder="Partagez vos motivations, expériences ou engagements…"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-                </div>
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-xs text-emerald-800">
-                  <p className="font-semibold mb-1">Récapitulatif</p>
-                  <p>{vol.nom} · {vol.email}</p>
-                  {vol.zone && <p>Zone : {vol.zone}</p>}
-                  {vol.competences.length > 0 && <p>Compétences : {vol.competences.join(", ")}</p>}
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => setStep(1)} className="flex-1 py-3 border border-gray-200 text-gray-600 font-medium rounded-xl text-sm hover:bg-gray-50 transition-colors">Retour</button>
-                  <button onClick={submitVolontaire} disabled={loading}
-                    className="flex-1 py-3 bg-emerald-700 hover:bg-emerald-600 disabled:bg-gray-100 disabled:text-gray-400 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                    {loading ? "Inscription…" : <><CheckCircle2 size={16} /> Confirmer</>}
-                  </button>
-                </div>
+            </>) : (
+              <div className="text-center py-16 px-8">
+                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5"><Sprout size={40} className="text-emerald-600" /></div>
+                <h3 className="text-2xl font-black text-slate-900 mb-2">Bienvenue !</h3>
+                <p className="text-slate-500 text-sm mb-8">Votre inscription est enregistree. Nous vous contacterons prochainement.</p>
+                <button onClick={() => {setShowVolontaire(false);setSent(false);setVstep(1);setForm({nom:"",email:"",commune:"",message:""}); }} className="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-emerald-700">Fermer</button>
               </div>
             )}
           </div>

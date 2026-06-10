@@ -170,71 +170,84 @@ export default function RoadmapPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* ── PAGE DE GARDE ─────────────────────────────────── */}
-      <div className="bg-black text-white min-h-screen flex flex-col">
+      <div className="relative overflow-hidden bg-slate-950 text-white min-h-screen flex flex-col">
+        {/* Blur décors */}
+        <div className="absolute top-0 left-1/4 w-[700px] h-[700px] bg-emerald-500/10 blur-[140px] rounded-full -translate-y-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-teal-400/8 blur-[120px] rounded-full translate-y-1/3 pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.025]" style={{backgroundImage:"linear-gradient(rgba(255,255,255,0.15) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.15) 1px,transparent 1px)",backgroundSize:"60px 60px"}} />
+
         {/* Nav */}
-        <nav className="flex items-center justify-between px-8 py-5 border-b border-slate-800">
+        <nav className="relative z-10 flex items-center justify-between px-8 py-5 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center">
+            <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center shadow-md">
               <Leaf size={18} className="text-white" />
             </div>
             <div>
-              <p className="font-bold text-sm">ASERGMV</p>
+              <p className="font-black text-sm tracking-tight">ASERGMV</p>
               <p className="text-[10px] text-slate-400">Plateforme Digitale</p>
             </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <a href="/portail" className="text-slate-400 hover:text-white transition-colors">Portail Citoyen</a>
-            <a href="/login" className="px-4 py-1.5 border border-slate-700 rounded-lg text-slate-300 hover:text-white hover:border-slate-500 transition-colors">Connexion</a>
+            <a href="/login" className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-slate-200 text-sm font-semibold transition-all">Connexion</a>
           </div>
         </nav>
 
         {/* Hero */}
-        <div className="flex-1 flex flex-col items-center justify-center px-8 py-24 text-center">
-          <span className="inline-block px-4 py-1.5 bg-emerald-900 text-emerald-300 text-xs font-semibold rounded-full tracking-widest uppercase mb-8">
-            Document stratégique · Confidentiel
-          </span>
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 py-24 text-center">
+          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest mb-10">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+            Document stratégique · {totalApps} applications
+          </div>
 
-          <h1 className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-6">
+          <h1 className="text-5xl md:text-8xl font-black leading-none tracking-tighter mb-6">
             ASERGMV<br />
-            <span className="text-emerald-400">Digital</span> Platform
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-400">
+              Digital Platform
+            </span>
           </h1>
 
-          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed mb-4">
+          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed mb-6">
             Feuille de route complète des applications numériques de l'Agence Sénégalaise pour la Grande Muraille Verte
           </p>
 
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-slate-500 mb-12">
-            <span><span className="text-white font-bold">{totalApps}</span> applications planifiées</span>
-            <span>·</span>
-            <span><span className="text-white font-bold">9</span> blocs thématiques</span>
-            <span>·</span>
-            <span><span className="text-white font-bold">4</span> niveaux de priorité</span>
-            <span>·</span>
-            <span><span className="text-white font-bold">850 km</span> de muraille verte</span>
-          </div>
-
-          {/* Priority pills */}
-          <div className="flex flex-wrap justify-center gap-3 mb-16">
-            {prioSummary.map(p => (
-              <div key={p.key} className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-full text-xs">
-                <span>{p.emoji}</span>
-                <span className="text-slate-300">{p.label.split("—")[0].trim()}</span>
+          {/* Counters */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto mb-12">
+            {[
+              { v: String(totalApps), l: "Applications" },
+              { v: "9",   l: "Blocs thématiques" },
+              { v: "4",   l: "Niveaux de priorité" },
+              { v: "850 km", l: "Muraille verte" },
+            ].map(({ v, l }) => (
+              <div key={l} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 text-center">
+                <p className="text-2xl font-black text-white">{v}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">{l}</p>
               </div>
             ))}
           </div>
 
-          <a href="#blocs" className="flex flex-col items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors animate-bounce">
-            <span className="text-xs tracking-widest uppercase">Voir les blocs</span>
+          {/* Priority pills */}
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
+            {prioSummary.map(p => (
+              <div key={p.key} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-semibold text-slate-300">
+                <span>{p.emoji}</span>
+                <span>{p.label.split("—")[0].trim()}</span>
+              </div>
+            ))}
+          </div>
+
+          <a href="#blocs" className="flex flex-col items-center gap-2 text-slate-500 hover:text-emerald-400 transition-colors animate-bounce">
+            <span className="text-xs tracking-widest uppercase font-bold">Voir les blocs</span>
             <ChevronDown size={20} />
           </a>
         </div>
 
-        {/* Stats bar */}
-        <div className="border-t border-slate-800 grid grid-cols-3 md:grid-cols-9 divide-x divide-slate-800 text-center py-0">
+        {/* Bloc nav strip */}
+        <div className="relative z-10 border-t border-white/5 grid grid-cols-3 md:grid-cols-9 text-center">
           {blocs.map(b => (
-            <a key={b.id} href={`#bloc-${b.id}`} className="py-4 hover:bg-slate-900 transition-colors group">
-              <p className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">{b.apps.length}</p>
-              <p className="text-[10px] text-slate-500 font-semibold">Bloc {b.id}</p>
+            <a key={b.id} href={`#bloc-${b.id}`} className="py-4 hover:bg-white/5 transition-colors group border-r border-white/5 last:border-r-0">
+              <p className="text-base font-black text-white group-hover:text-emerald-400 transition-colors">{b.apps.length}</p>
+              <p className="text-[10px] text-slate-600 font-bold uppercase">Bloc {b.id}</p>
             </a>
           ))}
         </div>
@@ -292,26 +305,24 @@ export default function RoadmapPage() {
                     const p = PRIO[app.prio];
                     const Icon = app.icon;
                     return (
-                      <div key={app.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-shadow bg-white group">
+                      <div key={app.id} className="border border-slate-100 rounded-2xl p-5 hover:shadow-lg transition-all bg-white group ring-1 ring-transparent hover:ring-slate-200 hover:-translate-y-0.5 duration-200">
                         {/* Card header */}
                         <div className="flex items-start justify-between gap-3 mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center shrink-0 group-hover:border-gray-200 transition-colors">
-                              <Icon size={17} className="text-gray-500" />
+                            <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
+                              <Icon size={18} className="text-slate-500" />
                             </div>
                             <div>
-                              <span className="text-[10px] font-bold text-gray-400">{app.id}</span>
-                              <p className="text-sm font-semibold text-gray-900 leading-snug">{app.nom}</p>
+                              <span className="text-[10px] font-black text-slate-300 uppercase tracking-wider">{app.id}</span>
+                              <p className="text-sm font-bold text-slate-900 leading-snug">{app.nom}</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <div className={`w-2 h-2 rounded-full ${p.dot}`} />
-                          </div>
+                          <div className={`shrink-0 w-2.5 h-2.5 rounded-full mt-1 ${p.dot}`} />
                         </div>
 
                         {/* Domaine */}
                         {app.domaine && (
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{app.domaine}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{app.domaine}</p>
                         )}
 
                         {/* Description */}

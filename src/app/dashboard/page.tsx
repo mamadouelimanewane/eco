@@ -2,9 +2,10 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  TreePine, MapPin, Leaf, Droplets, FolderKanban, Wind,
-  TrendingUp, ArrowUpRight, Clock, CheckCircle2, AlertCircle,
-  Map, Sprout, Users, BarChart3,
+  Map, Sprout, Users, BarChart3, FolderKanban, BookOpen,
+  TreePine, Shield, Droplets, FlaskConical, FileText, Settings,
+  Plus, TrendingUp, ArrowUpRight, AlertCircle, CheckCircle2, Clock,
+  Leaf, Building2, Target, Wind,
 } from "lucide-react";
 
 interface Stats {
@@ -13,30 +14,40 @@ interface Stats {
   projets: Array<{ id: string; nom: string; bailleur: string; statut: string; _count: { parcelles: number } }>;
 }
 
-const statutStyle: Record<string, string> = {
-  EN_COURS: "bg-emerald-100 text-emerald-700",
-  TERMINE:  "bg-slate-100 text-slate-500",
-  SUSPENDU: "bg-amber-100 text-amber-700",
-  PLANIFIE: "bg-blue-100 text-blue-700",
-};
-const statutLabel: Record<string, string> = {
-  EN_COURS: "En cours", TERMINE: "Terminé", SUSPENDU: "Suspendu", PLANIFIE: "Planifié",
-};
+const modules = [
+  { name: "Carte GMV",     href: "/carte",       icon: Map,          bg: "bg-emerald-100", color: "text-emerald-600" },
+  { name: "Communes",      href: "/communes",    icon: Building2,    bg: "bg-blue-100",    color: "text-blue-600"    },
+  { name: "Projets",       href: "/projets",     icon: FolderKanban, bg: "bg-violet-100",  color: "text-violet-600"  },
+  { name: "Parcelles",     href: "/parcelles",   icon: Sprout,       bg: "bg-lime-100",    color: "text-lime-700"    },
+  { name: "Saisies",       href: "/saisies",     icon: Target,       bg: "bg-amber-100",   color: "text-amber-600"   },
+  { name: "Volontaires",   href: "/volontaires", icon: Users,        bg: "bg-rose-100",    color: "text-rose-600"    },
+  { name: "Pépinières",    href: "/pepinieres",  icon: TreePine,     bg: "bg-teal-100",    color: "text-teal-600"    },
+  { name: "Rapports",      href: "/rapports",    icon: BarChart3,    bg: "bg-indigo-100",  color: "text-indigo-600"  },
+];
 
 const quickActions = [
-  { label: "Carte GMV",        href: "/carte",       icon: Map,          bg: "bg-emerald-600" },
-  { label: "Nouvelle saisie",  href: "/saisies",     icon: Sprout,       bg: "bg-blue-600"    },
-  { label: "Projets",          href: "/projets",     icon: FolderKanban, bg: "bg-violet-600"  },
-  { label: "Volontaires",      href: "/volontaires", icon: Users,        bg: "bg-rose-600"    },
-  { label: "Rapports KPI",     href: "/rapports",    icon: BarChart3,    bg: "bg-amber-600"   },
+  { label: "Nouvelle saisie", href: "/saisies",     icon: Plus,        color: "text-emerald-300" },
+  { label: "Voir la carte",   href: "/carte",       icon: Map,         color: "text-blue-300"    },
+  { label: "Rapport KPI",     href: "/rapports",    icon: BarChart3,   color: "text-amber-300"   },
+  { label: "Volontaires",     href: "/volontaires", icon: Users,       color: "text-rose-300"    },
 ];
+
+const statutStyle: Record<string, string> = {
+  EN_COURS: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  TERMINE:  "bg-slate-100 text-slate-500 border border-slate-200",
+  SUSPENDU: "bg-amber-100 text-amber-700 border border-amber-200",
+  PLANIFIE: "bg-blue-100 text-blue-700 border border-blue-200",
+};
+const statutLabel: Record<string, string> = {
+  EN_COURS:"En cours", TERMINE:"Terminé", SUSPENDU:"Suspendu", PLANIFIE:"Planifié",
+};
 
 export default function DashboardPage() {
   const { data: session } = useSession() ?? {};
   const [stats, setStats] = useState<Stats | null>(null);
   const now = new Date();
-  const hour = now.getHours();
-  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const h = now.getHours();
+  const greeting = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
   const firstName = session?.user?.name?.split(" ")[0] ?? "Agent";
 
   useEffect(() => {
@@ -44,244 +55,211 @@ export default function DashboardPage() {
   }, []);
 
   const kpis = [
-    {
-      label: "Arbres plantés",      key: "arbresPlantes",   icon: TreePine,    color: "emerald",
-      fmt: (v: number) => v.toLocaleString("fr-FR"),         unit: "",      trend: "+2 340 ce mois",
-    },
-    {
-      label: "Communes actives",    key: "communesActives", icon: MapPin,      color: "blue",
-      fmt: (v: number) => `${v}`,                            unit: "/131",  trend: "sur 131 cibles",
-    },
-    {
-      label: "Superficie reboisée", key: "superficieHa",    icon: Leaf,        color: "teal",
-      fmt: (v: number) => v.toLocaleString("fr-FR", { maximumFractionDigits: 1 }), unit: " ha", trend: "+12,4 ha ce trimestre",
-    },
-    {
-      label: "Taux de survie",      key: "tauxSurvie",      icon: Droplets,    color: "amber",
-      fmt: (v: number) => v.toFixed(1),                      unit: "%",     trend: "+1,2 pts vs N-1",
-    },
-    {
-      label: "Projets actifs",      key: "projetsActifs",   icon: FolderKanban,color: "violet",
-      fmt: (v: number) => `${v}`,                            unit: "",      trend: "8 bailleurs engagés",
-    },
-    {
-      label: "CO₂ séquestré",       key: "co2Tonnes",       icon: Wind,        color: "rose",
-      fmt: (v: number) => v.toLocaleString("fr-FR", { maximumFractionDigits: 0 }), unit: " t/an", trend: "Estimation 2026",
-    },
+    { label: "Arbres plantés",   key: "arbresPlantes",   fmt: (v: number) => v.toLocaleString("fr-FR"), unit: "" },
+    { label: "Taux de survie",   key: "tauxSurvie",      fmt: (v: number) => `${v.toFixed(1)}`,         unit: "%" },
+    { label: "Superficie",       key: "superficieHa",    fmt: (v: number) => v.toFixed(0),              unit: " ha" },
+    { label: "CO₂ séq.",         key: "co2Tonnes",       fmt: (v: number) => v.toLocaleString("fr-FR", { maximumFractionDigits:0 }), unit: " t" },
   ];
 
-  const colorMap: Record<string, { ring: string; icon: string; soft: string; text: string }> = {
-    emerald: { ring: "ring-emerald-200",  icon: "bg-emerald-600",  soft: "bg-emerald-50",  text: "text-emerald-600" },
-    blue:    { ring: "ring-blue-200",     icon: "bg-blue-600",     soft: "bg-blue-50",     text: "text-blue-600"    },
-    teal:    { ring: "ring-teal-200",     icon: "bg-teal-600",     soft: "bg-teal-50",     text: "text-teal-600"    },
-    amber:   { ring: "ring-amber-200",    icon: "bg-amber-500",    soft: "bg-amber-50",    text: "text-amber-600"   },
-    violet:  { ring: "ring-violet-200",   icon: "bg-violet-600",   soft: "bg-violet-50",   text: "text-violet-600"  },
-    rose:    { ring: "ring-rose-200",     icon: "bg-rose-600",     soft: "bg-rose-50",     text: "text-rose-600"    },
-  };
-
   return (
-    <div className="space-y-6 pb-8 animate-in">
+    <div className="space-y-6 pb-8">
 
-      {/* ── Bandeau de bienvenue ───────────────────── */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-900 p-6 text-white shadow-lg">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-slate-400 text-sm mb-1">{greeting},</p>
-            <h1 className="text-2xl font-bold">{firstName} 👋</h1>
-            <p className="text-slate-400 text-sm mt-1">
-              {now.toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}
-              {" · "}Grande Muraille Verte, Sénégal
+      {/* ── HERO ─────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 p-8 md:p-12 border border-white/5 shadow-2xl">
+        {/* Blur décors */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 blur-[100px] rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-teal-400/5 blur-[80px] rounded-full -translate-x-1/3 translate-y-1/3 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+          <div className="flex-1">
+            <p className="text-slate-400 text-sm mb-2">{greeting},</p>
+            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-tight mb-3">
+              GRANDE<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-400">
+                MURAILLE VERTE.
+              </span>
+            </h1>
+            <p className="text-slate-400 text-base font-light max-w-md">
+              {firstName}, votre plateforme de monitoring est active.
+              {" "}850 km de reforestation au Sénégal.
             </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2 bg-white/10 border border-white/10 rounded-xl text-sm text-white flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-4">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
-              Base de données connectée
+              <span className="text-xs text-slate-400 font-medium">Base de données Neon · connectée</span>
             </div>
+          </div>
+
+          {/* Stat glass cards */}
+          <div className="grid grid-cols-2 gap-3 md:w-72 shrink-0">
+            {kpis.map(({ label, key, fmt, unit }) => {
+              const v = stats ? (stats as any)[key] : null;
+              return (
+                <div key={key} className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-3xl text-center">
+                  {v !== null ? (
+                    <div className="text-2xl font-black text-white leading-none">
+                      {fmt(v)}<span className="text-xs font-semibold text-emerald-400 ml-0.5">{unit}</span>
+                    </div>
+                  ) : (
+                    <div className="h-7 bg-white/10 rounded-lg animate-pulse mx-auto w-20" />
+                  )}
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">{label}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Quick actions */}
-        <div className="mt-5 flex flex-wrap gap-2">
-          {quickActions.map(({ label, href, icon: Icon, bg }) => (
+        {/* Communes / Projets strip */}
+        <div className="relative z-10 mt-6 pt-6 border-t border-white/5 flex flex-wrap items-center gap-4">
+          <div className="text-center">
+            <p className="text-2xl font-black text-emerald-400">{stats?.communesActives ?? "…"}<span className="text-slate-600">/131</span></p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Communes</p>
+          </div>
+          <div className="w-px h-8 bg-white/10" />
+          <div className="text-center">
+            <p className="text-2xl font-black text-white">{stats?.projetsActifs ?? "…"}</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Projets actifs</p>
+          </div>
+          <div className="w-px h-8 bg-white/10" />
+          <div className="text-center">
+            <p className="text-2xl font-black text-teal-400">8</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Bailleurs</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MODULE GRID ───────────────────────────── */}
+      <div>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Navigation rapide</p>
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+          {modules.map(({ name, href, icon: Icon, bg, color }) => (
             <a key={href} href={href}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-sm text-white transition-all">
-              <span className={`w-5 h-5 ${bg} rounded flex items-center justify-center`}>
-                <Icon size={11} />
-              </span>
-              {label}
+              className="group flex flex-col items-center justify-center gap-2.5 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-200 ring-1 ring-transparent hover:ring-slate-200 cursor-pointer">
+              <div className={`p-3 rounded-xl ${bg} ${color} group-hover:scale-110 transition-transform duration-200`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-slate-600 text-center leading-tight">{name}</span>
             </a>
           ))}
         </div>
       </div>
 
-      {/* ── KPI cards ────────────────────────────── */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Indicateurs clés</h2>
-          <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-            Mise à jour en temps réel
-          </span>
-        </div>
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-          {kpis.map(({ key, label, icon: Icon, color, fmt, unit, trend }) => {
-            const c = colorMap[color];
-            const value = stats ? (stats as any)[key] : null;
-            return (
-              <div key={key}
-                className={`bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ring-1 ring-transparent hover:${c.ring}`}>
-                <div className="p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`w-10 h-10 ${c.icon} rounded-xl flex items-center justify-center shadow-sm`}>
-                      <Icon size={18} className="text-white" />
-                    </div>
-                    <TrendingUp size={14} className="text-slate-300" />
-                  </div>
-                  {value !== null ? (
-                    <div className="text-3xl font-black text-slate-900 leading-none tracking-tight">
-                      {fmt(value)}<span className="text-base font-semibold text-slate-400 ml-0.5">{unit}</span>
-                    </div>
-                  ) : (
-                    <div className="h-9 w-32 bg-slate-100 rounded-lg animate-pulse" />
-                  )}
-                  <p className="text-sm font-semibold text-slate-600 mt-1.5">{label}</p>
-                  <p className={`text-xs mt-1 ${c.text} font-medium flex items-center gap-1`}>
-                    <ArrowUpRight size={11} /> {trend}
-                  </p>
-                </div>
-                <div className={`h-1 w-full ${c.icon}`} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Grille basse ─────────────────────────── */}
+      {/* ── LIGNE BASSE ─────────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
         {/* Projets en cours */}
-        <div className="xl:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
-                <FolderKanban size={15} className="text-violet-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-800">Projets en cours</h3>
-                <p className="text-xs text-slate-400">Programmes actifs ASERGMV</p>
-              </div>
+        <div className="xl:col-span-2 bg-white rounded-2xl border-none shadow-md overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FolderKanban size={16} className="text-violet-500" />
+              <p className="text-sm font-bold text-slate-700 uppercase tracking-wide">Projets en cours</p>
             </div>
-            <a href="/projets"
-              className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 px-3 py-1.5 hover:bg-emerald-50 rounded-lg transition-colors">
+            <a href="/projets" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 px-3 py-1.5 hover:bg-emerald-50 rounded-lg transition-colors">
               Voir tous <ArrowUpRight size={12} />
             </a>
           </div>
-          <div>
-            {stats?.projets?.length ? stats.projets.map((p, i) => (
-              <div key={p.id}
-                className={`flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors ${i !== (stats.projets.length - 1) ? "border-b border-slate-50" : ""}`}>
-                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold text-slate-500">
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{p.nom}</p>
-                  <p className="text-xs text-slate-400 truncate">{p.bailleur} · {p._count.parcelles} parcelle(s)</p>
-                </div>
-                <span className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg ${statutStyle[p.statut] ?? "bg-slate-100 text-slate-500"}`}>
-                  {statutLabel[p.statut] ?? p.statut}
-                </span>
+          {stats?.projets?.length ? stats.projets.map((p, i) => (
+            <div key={p.id} className={`flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors ${i !== stats.projets.length - 1 ? "border-b border-slate-50" : ""}`}>
+              <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center shrink-0 text-xs font-black text-violet-400">
+                {i + 1}
               </div>
-            )) : Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-3.5 border-b border-slate-50">
-                <div className="w-8 h-8 bg-slate-100 rounded-lg animate-pulse" />
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 bg-slate-100 rounded animate-pulse w-3/4" />
-                  <div className="h-2.5 bg-slate-100 rounded animate-pulse w-1/2" />
-                </div>
-                <div className="w-16 h-6 bg-slate-100 rounded-lg animate-pulse" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate">{p.nom}</p>
+                <p className="text-xs text-slate-400 truncate">{p.bailleur} · {p._count.parcelles} parcelle(s)</p>
               </div>
-            ))}
-          </div>
+              <span className={`shrink-0 text-[11px] font-bold px-3 py-1 rounded-full ${statutStyle[p.statut] ?? "bg-slate-100 text-slate-500"}`}>
+                {statutLabel[p.statut] ?? p.statut}
+              </span>
+            </div>
+          )) : Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-slate-50">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 bg-slate-100 rounded animate-pulse w-3/4" />
+                <div className="h-2.5 bg-slate-100 rounded animate-pulse w-1/2" />
+              </div>
+              <div className="w-20 h-6 bg-slate-100 rounded-full animate-pulse" />
+            </div>
+          ))}
         </div>
 
-        {/* Panneau droit */}
+        {/* Actions rapides + Avancement */}
         <div className="flex flex-col gap-5">
 
+          {/* Quick actions — dark card */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-md overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-12 -mt-12 pointer-events-none" />
+            <div className="px-5 py-4 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="bg-white/15 p-1.5 rounded-lg"><Plus size={14} className="text-white" /></span>
+                <p className="text-sm font-bold text-white">Actions rapides</p>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">Raccourcis fréquents</p>
+            </div>
+            <div className="p-4 grid grid-cols-2 gap-3">
+              {quickActions.map(({ label, href, icon: Icon, color }) => (
+                <a key={href} href={href}
+                  className="flex flex-col items-center gap-2 py-4 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-all hover:scale-105 duration-200 cursor-pointer text-center">
+                  <Icon size={20} className={color} />
+                  <span className="text-[11px] font-semibold leading-tight">{label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+
           {/* Avancement */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <TrendingUp size={15} className="text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-800">Avancement GMV</h3>
-                <p className="text-xs text-slate-400">Sénégal · 850 km</p>
-              </div>
+          <div className="bg-white rounded-2xl shadow-md overflow-hidden border-none flex-1">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+              <TrendingUp size={15} className="text-emerald-500" />
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Avancement GMV</p>
             </div>
             <div className="p-5 space-y-5">
               {[
-                { label: "Communes couvertes",    v: stats?.communesActives ?? 0, max: 131,  color: "bg-emerald-500", text: "text-emerald-600" },
-                { label: "Arbres (× 10 000)",     v: Math.round((stats?.arbresPlantes ?? 0)/10000), max: 1000, color: "bg-blue-500", text: "text-blue-600" },
-                { label: "Superficie reboisée",   v: Math.round(stats?.superficieHa ?? 0),   max: 500,  color: "bg-teal-500",   text: "text-teal-600" },
-              ].map(({ label, v, max, color, text }) => {
-                const pct = Math.min(Math.round((v / max) * 100), 100);
+                { label: "Communes", v: stats?.communesActives ?? 0, max: 131, bar: "bg-emerald-500", val: "text-emerald-600" },
+                { label: "Arbres ×10k", v: Math.round((stats?.arbresPlantes ?? 0)/10000), max: 1000, bar: "bg-blue-500", val: "text-blue-600" },
+                { label: "Superficie ha", v: Math.round(stats?.superficieHa ?? 0), max: 500, bar: "bg-teal-500", val: "text-teal-600" },
+              ].map(({ label, v, max, bar, val }) => {
+                const pct = Math.min(Math.round((v/max)*100),100);
                 return (
                   <div key={label}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-slate-600">{label}</span>
+                      <span className="text-xs font-semibold text-slate-500">{label}</span>
                       <div className="flex items-baseline gap-1">
-                        <span className={`text-sm font-black ${text}`}>{v}</span>
-                        <span className="text-xs text-slate-400">/ {max}</span>
+                        <span className={`text-sm font-black ${val}`}>{v}</span>
+                        <span className="text-[10px] text-slate-300">/{max}</span>
                       </div>
                     </div>
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
+                      <div className={`h-full ${bar} rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
                     </div>
-                    <p className="text-right text-[10px] text-slate-400 mt-1">{pct}%</p>
                   </div>
                 );
               })}
             </div>
-          </div>
 
-          {/* Alertes / Statut */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800">Statut de la plateforme</h3>
-            </div>
-            <div className="p-4 space-y-2.5">
+            {/* Statut */}
+            <div className="px-5 pb-5 space-y-2 border-t border-slate-50 pt-4">
               {[
-                { label: "Base de données Neon",        ok: true  },
-                { label: "API stats",                    ok: stats !== null },
-                { label: "Portail citoyen",              ok: true  },
-                { label: "Synchronisation saisies",      ok: true  },
+                { label: "Base de données", ok: true },
+                { label: "API connectée",   ok: stats !== null },
+                { label: "Portail citoyen", ok: true },
               ].map(({ label, ok }) => (
-                <div key={label} className="flex items-center justify-between py-1">
-                  <span className="text-xs text-slate-600">{label}</span>
-                  <span className={`flex items-center gap-1.5 text-xs font-semibold ${ok ? "text-emerald-600" : "text-amber-600"}`}>
-                    {ok
-                      ? <><CheckCircle2 size={12} /> Actif</>
-                      : <><AlertCircle size={12} /> En attente</>}
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">{label}</span>
+                  <span className={`flex items-center gap-1 text-[11px] font-bold ${ok ? "text-emerald-600" : "text-amber-500"}`}>
+                    {ok ? <><CheckCircle2 size={11} /> Actif</> : <><AlertCircle size={11} /> Attente</>}
                   </span>
                 </div>
               ))}
             </div>
-            <div className="px-4 pb-4">
-              <a href="/carte"
-                className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl transition-colors">
-                <MapPin size={14} /> Ouvrir la carte GMV
-              </a>
-            </div>
           </div>
-
         </div>
       </div>
 
-      {/* ── Footer info ──────────────────────────── */}
-      <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-200">
-        <span className="flex items-center gap-1.5"><Clock size={11} /> Dernière mise à jour : {now.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}</span>
-        <span>ASERGMV Platform v2026.1 · Neon PostgreSQL</span>
+      {/* Footer */}
+      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-200">
+        <span className="flex items-center gap-1.5"><Clock size={11} /> {now.toLocaleString("fr-FR",{dateStyle:"long",timeStyle:"short"})}</span>
+        <span>ASERGMV Platform v2026.1</span>
       </div>
     </div>
   );
