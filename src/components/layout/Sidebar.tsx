@@ -5,7 +5,7 @@ import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard, Map, FolderKanban, Sprout, Users,
   BarChart3, BookOpen, LogOut, Leaf, Building2,
-  FlaskConical, Target, FileText, Settings, TreePine,
+  FlaskConical, Target, FileText, Settings, TreePine, Globe,
 } from "lucide-react";
 
 const groups = [
@@ -52,6 +52,10 @@ const groups = [
       { label: "Paramètres", href: "/parametres", icon: Settings },
     ],
   },
+];
+
+const externalLinks = [
+  { label: "Portail Citoyen", href: "/portail", icon: Globe },
 ];
 
 export default function Sidebar() {
@@ -117,6 +121,18 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
+
+      {/* Portail citoyen */}
+      <div className="px-3 pb-2 border-t border-slate-800 pt-3">
+        {externalLinks.map(({ label, href, icon: Icon }) => (
+          <a key={href} href={href} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-900 hover:text-white transition-all duration-150 group">
+            <Icon size={16} className="text-slate-500 group-hover:text-emerald-400" />
+            <span>{label}</span>
+            <span className="ml-auto text-[10px] border border-slate-700 text-slate-600 px-1.5 py-0.5 rounded">↗</span>
+          </a>
+        ))}
+      </div>
 
       {/* Footer */}
       <div className="p-4 border-t border-slate-800 bg-slate-950 space-y-3 shrink-0">
