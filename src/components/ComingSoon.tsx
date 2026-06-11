@@ -55,12 +55,6 @@ export default function ComingSoon({ id, nom, description, icon: Icon, prio, blo
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">{nom}</h1>
             <p className="text-slate-400 text-base leading-relaxed max-w-2xl">{description}</p>
           </div>
-          <div className="shrink-0 text-right">
-            <div className="inline-flex flex-col items-center gap-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-3">
-              <Clock size={20} className="text-slate-400" />
-              <span className="text-[11px] font-black text-slate-300 uppercase tracking-wider">En dev.</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -118,9 +112,13 @@ export default function ComingSoon({ id, nom, description, icon: Icon, prio, blo
         </div>
       </div>
 
-      {/* CTA */}
+      {/* Dev status + CTA */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Clock size={13} className="text-amber-400" />
+            <span className="text-[11px] font-black text-amber-400 uppercase tracking-widest">En cours de developpement</span>
+          </div>
           <p className="text-white font-black text-base mb-1">Interessé par cette fonctionnalite ?</p>
           <p className="text-slate-400 text-sm">Contactez l'equipe ASERGMV pour accelerer le developpement.</p>
         </div>
